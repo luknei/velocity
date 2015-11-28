@@ -756,7 +756,31 @@ return function (global, window, document, undefined) {
             sequence.reverse();
         }
 
+        // Returning array of promises if promises are being used
+        var promises = [];
+        if (window.Promise) {
+            sequence.forEach(function (currentCall) {
+                var promise = new Promise(function (fullfil, reject) {
+                    var options = currentCall.o || currentCall.options || {};
+                    var completeCb = options.complete;
+
+                    currentCall.options = options;
+
+                    options.complete = function () {
+                        if (completeCb && typeof completeCb === 'function') {
+                            completeCb.apply(null, arguments)
+                        }
+                        fullfil(arguments);
+                    };
+                });
+
+                promises.push(promise)
+            });
+        }
+
         Velocity(sequence[0]);
+
+        return promises;
     };
 }((window.jQuery || window.Zepto || window), window, document);
 }));
